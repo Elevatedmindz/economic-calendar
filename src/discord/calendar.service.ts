@@ -14,7 +14,7 @@ export class ScraperService {
 
   private messageId: string = '';
 
-  @Cron('45 2 * * *') // midnight every day
+  @Cron('0 0 * * *') // midnight every day
   async onMidnightCronJob() {
     await this.getEconomicCalendar(true);
   }
