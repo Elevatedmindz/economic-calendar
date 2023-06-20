@@ -11,13 +11,18 @@ const common_1 = require("@nestjs/common");
 const bot_service_1 = require("./discord/bot.service");
 const calendar_service_1 = require("./discord/calendar.service");
 const schedule_1 = require("@nestjs/schedule");
+const app_controller_1 = require("./app.controller");
+const app_service_1 = require("./app.service");
+const bot_controller_1 = require("./discord/bot.controller");
+const cron_service_1 = require("./job/cron.service");
+const message_service_1 = require("./job/message.service");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
     (0, common_1.Module)({
         imports: [schedule_1.ScheduleModule.forRoot()],
-        controllers: [],
-        providers: [bot_service_1.BotService, calendar_service_1.ScraperService],
+        controllers: [app_controller_1.AppController, bot_controller_1.BotController],
+        providers: [app_service_1.AppService, bot_service_1.BotService, calendar_service_1.ScraperService, cron_service_1.CronService, message_service_1.MessageService],
     })
 ], AppModule);
 exports.AppModule = AppModule;

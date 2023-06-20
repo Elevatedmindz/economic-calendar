@@ -1,35 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { BotService } from './bot.service';
 import { chromium } from 'playwright';
 import * as cheerio from 'cheerio';
-import { TextChannel, EmbedBuilder } from 'discord.js';
 import { format, parse} from 'date-fns';
 import { utcToZonedTime as utcToZonedTimeTZ, zonedTimeToUtc as zonedTimeToUtcTZ } from 'date-fns-tz';
-
+import { MessageService } from '../job/message.service'; // MessageService'i import ettik
 
 @Injectable()
 export class ScraperService {
-  constructor(private readonly botService: BotService) {}
+  constructor(private readonly botService: BotService,private readonly messageService: MessageService) {}
 
   private messageId: string = '';
-
-  @Cron('0 0 * * *') // midnight every day
-  async onMidnightCronJob() {
-    await this.getEconomicCalendar(true);
-  }
-
-  @Cron('0 0,15,30,45 * * * *') // her 15 dakikada bir başlat
-  async onFirstCronJob() {
-    await this.getEconomicCalendar();
-  }
-
-  @Cron('1-59/15 * * * *')  // 15 dakikada bir başlat ve 1 dakika sonrasında tekrar çalıştır."Günde 96 kere"
-  async onSecondCronJob() {
-    await this.getEconomicCalendar();
-  }
   
-
   private sample<T>(array: T[]): T {
     return array[Math.floor(Math.random() * array.length)];
   }
@@ -56,7 +38,7 @@ export class ScraperService {
     return true;
   }
 
-  async getEconomicCalendar(isNewMessage: boolean = false): Promise<void> {
+  async getEconomicCalendar(isNewMessage: boolean = false): Promise<string[]> {
     try {
       const today = new Date();
       const link = `https://www.forexfactory.com/calendar?day=today`;
@@ -150,148 +132,15 @@ export class ScraperService {
           console.log(`Error processing row: ${err.message}`);
         }
       }
-      await this.postToChannel(events, isNewMessage);
-      
-
-
+      return events;
     } catch (err) {
       console.log(`Error retrieving data: ${err.message}`);
+      return []; // Herhangi bir hata durumunda boş bir dizi döndür
     }
-  }
-
-  async postToChannel(messages: string[], isNewMessage) {
-    console.log("Posting to Discord channel...");
-    const currentDate = format(utcToZonedTimeTZ(new Date(), "Europe/Istanbul"), "yyyy-MM-dd");
-
-    try {
-      const eventsByDate: { [key: string]: string[] } = {};
-  
-      messages.forEach((message) => {
-        const [date, currency, impact, event, actual, forecast, previous] = message.split(',');
-        const localDate = format(utcToZonedTimeTZ(new Date(date), "Europe/Istanbul"), "yyyy-MM-dd");
-        const localDateTime = format(new Date(date), "yyyy-MM-dd'T'HH:mm:ss.SSS");
     
-        if (!eventsByDate[localDate]) {
-          eventsByDate[localDate] = [];
-        }
-        eventsByDate[localDate].push([localDateTime, currency, impact, event, actual, forecast, previous].join(','));
-      });
-      
-
-      console.log("Events by date:", eventsByDate);
-      for (const date in eventsByDate) {
-        if (date !== currentDate) {
-          continue;
-        }
-        if (eventsByDate[date].length === 0) {
-          console.log(`No events found for date ${date}.`);
-          continue;
-        }
-  
-        let tableString = "";
-  
-        const validData = eventsByDate[date].map(row => {
-          const [date, currency, impact, event, actual, forecast, previous] = row.split(',');
-          const rowData = { date, currency, impact, event, actual: actual === '' ? '' : actual, forecast, previous };
-          return rowData;
-        });
-        
-  
-        const sortedValidData = validData.sort((a, b) => {
-          const aDate = new Date(a.date);
-          const bDate = new Date(b.date);
-        
-          if (aDate > bDate) {
-            return 1;
-          } else if (aDate < bDate) {
-            return -1;
-          } else {
-            return 0;
-          }
-        });
-        
-        const currencyFlagMap = {
-          
-          'USD': ':flag_us:',
-          'EUR': ':flag_eu:',
-          'NZD': ':flag_nz:',
-          'AUD': ':flag_au:',
-          'JPY': ':flag_jp:',
-          'GBP': ':flag_gb:',
-          'CAD': ':flag_ca:',
-          'CNY': ':flag_cn:',
-          'CHF': ':flag_ch:',
-        };
-        
-        const impactEmojiMap = {
-          'High Impact Expected': ':red_square:',
-          'Medium Impact Expected': ':orange_square:',
-          'Low Impact Expected': ':yellow_square:',
-          'Non-Economic': ':white_large_square:',
-        };
-        
-        
-        const rightHeader = [
-          { label: 'Gerçek', pad: 7 },
-          { label: 'Tahmin', pad: 7 },
-          { label: 'Önceki', pad: 6 },
-        ];
-        
-        const currentDateUnix = Math.floor(utcToZonedTimeTZ(new Date(), "Europe/Istanbul").getTime() / 1000);
-
-        
-        const rightHeaderString = rightHeader.reduce((acc, item, index) => {
-          return acc + `${item.label}`.padEnd(item.pad, ' ');
-        }, '').trim();
-        
-        const headerFormatted = `<t:${currentDateUnix}:d> | \`${"Olay".padEnd(22, ' ')}\` \`${rightHeaderString}\`\n\n`;
-        
-        for (const rowData of sortedValidData) {
-          const eventTime = format(utcToZonedTimeTZ(new Date(rowData.date), "Europe/Istanbul"), "HH:mm");
-
-
-          const currencyFlag = currencyFlagMap[rowData.currency] || rowData.currency;
-          const impactEmoji = impactEmojiMap[rowData.impact] || rowData.impact;
-          const eventString = rowData.event.slice(0, 22).padEnd(22, ' ');
-          const actualString = (rowData.actual || '').padStart(rowData.actual && rowData.actual.startsWith('-') ? 6 : 6, ' ');
-          const forecastString = rowData.forecast.padStart(rowData.forecast.startsWith('-') ? 6 : 6, ' ');
-          const previousString = rowData.previous.padStart(rowData.previous.startsWith('-') ? 6 : 6, ' ');
-        
-          const tableRow = `\`${eventTime}\` ${currencyFlag} ${impactEmoji} \`${eventString}\` \`${actualString} ${forecastString} ${previousString}\`\n`;
-          tableString += tableRow;
-        }
-
-        const mentionRole = "<@&1080973408990404758>";
-
-        const embed = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setTitle('Günün Ekonomik Takvimi')
-          .setAuthor({ name: 'Dark Side Finance', iconURL: 'https://lh3.googleusercontent.com/u/1/drive-viewer/AFGJ81pWqrVpOMnaErPEKyTP1AvVsLvkau9uObXpOvFOMsOJyFD8wGKJFdmN1UmqAzubMJXRuBBBQVwONMNwZmH-3UpuVQaA=w1920-h929', url: 'https://discord.gg/2Gstp3FjuH' })
-          .setDescription(headerFormatted + `${tableString}`)
-          .setThumbnail('https://lh3.googleusercontent.com/u/1/drive-viewer/AFGJ81rbuLyn1PoBAsyuWE7Wk5A09KutoQj9C58LySPnfqKAI_-sMmDdu2ct29DrR0aj6uZUsegbSjWqZf081XIyzew3nddxeA=w1920-h929')
-          .setTimestamp()
-          .setFooter({ text: 'R2-D2 Bot Powered by Dark Side Community', iconURL: 'https://cdn.discordapp.com/avatars/1083518271531257966/6af47747a8daa570d0c83d13f8a36201.png?size=512' });
-  
-        const client = this.botService.getClient();
-        const channel = await client.channels.fetch('1093765685747925012') as TextChannel; //Kanal ID'si
-
-        console.log("Sending embed message to Discord channel...");
-
-        if (isNewMessage) {
-          const sentMessage = await channel.send({ content: mentionRole, embeds: [embed] });
-          this.messageId = sentMessage.id;
-        } else {
-          if (this.messageId) {
-            const existingMessage = await channel.messages.fetch(this.messageId);
-            await existingMessage.edit({ embeds: [embed] });
-          }
-        }
-
-        console.log("Message sent to Discord channel.");
-
-      }
-    } catch (error) {
-      console.error("Error sending embed message to Discord channel:", error);
-    }
+  }
+  async processDataAndSendMessage(isNewMessage: boolean = false) {
+    const events = await this.getEconomicCalendar(isNewMessage);
+    await this.messageService.postToChannel(events, isNewMessage);
   }
 }

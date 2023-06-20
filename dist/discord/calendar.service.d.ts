@@ -1,14 +1,13 @@
 import { BotService } from './bot.service';
+import { MessageService } from '../job/message.service';
 export declare class ScraperService {
     private readonly botService;
-    constructor(botService: BotService);
+    private readonly messageService;
+    constructor(botService: BotService, messageService: MessageService);
     private messageId;
-    onMidnightCronJob(): Promise<void>;
-    onFirstCronJob(): Promise<void>;
-    onSecondCronJob(): Promise<void>;
     private sample;
     private headers;
     private checkData;
-    getEconomicCalendar(isNewMessage?: boolean): Promise<void>;
-    postToChannel(messages: string[], isNewMessage: any): Promise<void>;
+    getEconomicCalendar(isNewMessage?: boolean): Promise<string[]>;
+    processDataAndSendMessage(isNewMessage?: boolean): Promise<void>;
 }

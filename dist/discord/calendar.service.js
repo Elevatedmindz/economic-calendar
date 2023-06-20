@@ -11,16 +11,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScraperService = void 0;
 const common_1 = require("@nestjs/common");
-const schedule_1 = require("@nestjs/schedule");
 const bot_service_1 = require("./bot.service");
 const playwright_1 = require("playwright");
 const cheerio = require("cheerio");
-const discord_js_1 = require("discord.js");
 const date_fns_1 = require("date-fns");
 const date_fns_tz_1 = require("date-fns-tz");
+const message_service_1 = require("../job/message.service");
 let ScraperService = class ScraperService {
-    constructor(botService) {
+    constructor(botService, messageService) {
         this.botService = botService;
+        this.messageService = messageService;
         this.messageId = '';
         this.headers = [
             {
@@ -36,15 +36,6 @@ let ScraperService = class ScraperService {
                 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:90.0) Gecko/20100101 Firefox/90.0',
             },
         ];
-    }
-    async onMidnightCronJob() {
-        await this.getEconomicCalendar(true);
-    }
-    async onFirstCronJob() {
-        await this.getEconomicCalendar();
-    }
-    async onSecondCronJob() {
-        await this.getEconomicCalendar();
     }
     sample(array) {
         return array[Math.floor(Math.random() * array.length)];
@@ -139,143 +130,21 @@ let ScraperService = class ScraperService {
                     console.log(`Error processing row: ${err.message}`);
                 }
             }
-            await this.postToChannel(events, isNewMessage);
+            return events;
         }
         catch (err) {
             console.log(`Error retrieving data: ${err.message}`);
+            return [];
         }
     }
-    async postToChannel(messages, isNewMessage) {
-        console.log("Posting to Discord channel...");
-        const currentDate = (0, date_fns_1.format)((0, date_fns_tz_1.utcToZonedTime)(new Date(), "Europe/Istanbul"), "yyyy-MM-dd");
-        try {
-            const eventsByDate = {};
-            messages.forEach((message) => {
-                const [date, currency, impact, event, actual, forecast, previous] = message.split(',');
-                const localDate = (0, date_fns_1.format)((0, date_fns_tz_1.utcToZonedTime)(new Date(date), "Europe/Istanbul"), "yyyy-MM-dd");
-                const localDateTime = (0, date_fns_1.format)(new Date(date), "yyyy-MM-dd'T'HH:mm:ss.SSS");
-                if (!eventsByDate[localDate]) {
-                    eventsByDate[localDate] = [];
-                }
-                eventsByDate[localDate].push([localDateTime, currency, impact, event, actual, forecast, previous].join(','));
-            });
-            console.log("Events by date:", eventsByDate);
-            for (const date in eventsByDate) {
-                if (date !== currentDate) {
-                    continue;
-                }
-                if (eventsByDate[date].length === 0) {
-                    console.log(`No events found for date ${date}.`);
-                    continue;
-                }
-                let tableString = "";
-                const validData = eventsByDate[date].map(row => {
-                    const [date, currency, impact, event, actual, forecast, previous] = row.split(',');
-                    const rowData = { date, currency, impact, event, actual: actual === '' ? '' : actual, forecast, previous };
-                    return rowData;
-                });
-                const sortedValidData = validData.sort((a, b) => {
-                    const aDate = new Date(a.date);
-                    const bDate = new Date(b.date);
-                    if (aDate > bDate) {
-                        return 1;
-                    }
-                    else if (aDate < bDate) {
-                        return -1;
-                    }
-                    else {
-                        return 0;
-                    }
-                });
-                const currencyFlagMap = {
-                    'USD': ':flag_us:',
-                    'EUR': ':flag_eu:',
-                    'NZD': ':flag_nz:',
-                    'AUD': ':flag_au:',
-                    'JPY': ':flag_jp:',
-                    'GBP': ':flag_gb:',
-                    'CAD': ':flag_ca:',
-                    'CNY': ':flag_cn:',
-                    'CHF': ':flag_ch:',
-                };
-                const impactEmojiMap = {
-                    'High Impact Expected': ':red_square:',
-                    'Medium Impact Expected': ':orange_square:',
-                    'Low Impact Expected': ':yellow_square:',
-                    'Non-Economic': ':white_large_square:',
-                };
-                const rightHeader = [
-                    { label: 'Gerçek', pad: 7 },
-                    { label: 'Tahmin', pad: 7 },
-                    { label: 'Önceki', pad: 6 },
-                ];
-                const currentDateUnix = Math.floor((0, date_fns_tz_1.utcToZonedTime)(new Date(), "Europe/Istanbul").getTime() / 1000);
-                const rightHeaderString = rightHeader.reduce((acc, item, index) => {
-                    return acc + `${item.label}`.padEnd(item.pad, ' ');
-                }, '').trim();
-                const headerFormatted = `<t:${currentDateUnix}:d> | \`${"Olay".padEnd(22, ' ')}\` \`${rightHeaderString}\`\n\n`;
-                for (const rowData of sortedValidData) {
-                    const eventTime = (0, date_fns_1.format)((0, date_fns_tz_1.utcToZonedTime)(new Date(rowData.date), "Europe/Istanbul"), "HH:mm");
-                    const currencyFlag = currencyFlagMap[rowData.currency] || rowData.currency;
-                    const impactEmoji = impactEmojiMap[rowData.impact] || rowData.impact;
-                    const eventString = rowData.event.slice(0, 22).padEnd(22, ' ');
-                    const actualString = (rowData.actual || '').padStart(rowData.actual && rowData.actual.startsWith('-') ? 6 : 6, ' ');
-                    const forecastString = rowData.forecast.padStart(rowData.forecast.startsWith('-') ? 6 : 6, ' ');
-                    const previousString = rowData.previous.padStart(rowData.previous.startsWith('-') ? 6 : 6, ' ');
-                    const tableRow = `\`${eventTime}\` ${currencyFlag} ${impactEmoji} \`${eventString}\` \`${actualString} ${forecastString} ${previousString}\`\n`;
-                    tableString += tableRow;
-                }
-                const mentionRole = "<@&1080973408990404758>";
-                const embed = new discord_js_1.EmbedBuilder()
-                    .setColor('#0099ff')
-                    .setTitle('Günün Ekonomik Takvimi')
-                    .setAuthor({ name: 'Dark Side Finance', iconURL: 'https://lh3.googleusercontent.com/u/1/drive-viewer/AFGJ81pWqrVpOMnaErPEKyTP1AvVsLvkau9uObXpOvFOMsOJyFD8wGKJFdmN1UmqAzubMJXRuBBBQVwONMNwZmH-3UpuVQaA=w1920-h929', url: 'https://discord.gg/2Gstp3FjuH' })
-                    .setDescription(headerFormatted + `${tableString}`)
-                    .setThumbnail('https://lh3.googleusercontent.com/u/1/drive-viewer/AFGJ81rbuLyn1PoBAsyuWE7Wk5A09KutoQj9C58LySPnfqKAI_-sMmDdu2ct29DrR0aj6uZUsegbSjWqZf081XIyzew3nddxeA=w1920-h929')
-                    .setTimestamp()
-                    .setFooter({ text: 'R2-D2 Bot Powered by Dark Side Community', iconURL: 'https://cdn.discordapp.com/avatars/1083518271531257966/6af47747a8daa570d0c83d13f8a36201.png?size=512' });
-                const client = this.botService.getClient();
-                const channel = await client.channels.fetch('1093765685747925012');
-                console.log("Sending embed message to Discord channel...");
-                if (isNewMessage) {
-                    const sentMessage = await channel.send({ content: mentionRole, embeds: [embed] });
-                    this.messageId = sentMessage.id;
-                }
-                else {
-                    if (this.messageId) {
-                        const existingMessage = await channel.messages.fetch(this.messageId);
-                        await existingMessage.edit({ embeds: [embed] });
-                    }
-                }
-                console.log("Message sent to Discord channel.");
-            }
-        }
-        catch (error) {
-            console.error("Error sending embed message to Discord channel:", error);
-        }
+    async processDataAndSendMessage(isNewMessage = false) {
+        const events = await this.getEconomicCalendar(isNewMessage);
+        await this.messageService.postToChannel(events, isNewMessage);
     }
 };
-__decorate([
-    (0, schedule_1.Cron)('45 2 * * *'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], ScraperService.prototype, "onMidnightCronJob", null);
-__decorate([
-    (0, schedule_1.Cron)('0 0,15,30,45 * * * *'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], ScraperService.prototype, "onFirstCronJob", null);
-__decorate([
-    (0, schedule_1.Cron)('1-59/15 * * * *'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], ScraperService.prototype, "onSecondCronJob", null);
 ScraperService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [bot_service_1.BotService])
+    __metadata("design:paramtypes", [bot_service_1.BotService, message_service_1.MessageService])
 ], ScraperService);
 exports.ScraperService = ScraperService;
 //# sourceMappingURL=calendar.service.js.map
