@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ScraperService } from '../discord/calendar.service';
 import { MessageService } from './message.service';
+import { BotService } from '../discord/bot.service';
 
 @Injectable()
 export class CronService {
@@ -10,8 +11,16 @@ export class CronService {
   constructor(
     private readonly scraperService: ScraperService,
     private readonly messageService: MessageService,
+    private readonly botService: BotService,  // Inject BotService here
   ) {}
 
+  @Cron('00 18 * * *') // runs at 18:00 every day
+  async onStartBotCronJob() {
+    console.log("Starting bot...");
+    // Add your bot token here
+    await this.botService.startBot('MTA4MzUxODI3MTUzMTI1Nzk2Ng.G9qSDR.aC1QExNq_DiyBNoSd8HsozqM-R1mfmLPEPYxwQ');
+  }
+  
   @Cron('03 18 * * *') // runs at 00:00 every day
   async onMidnightCronJob() {
     console.log("Running midnight reset cron job...");
