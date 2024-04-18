@@ -1,30 +1,35 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
+  <img src="https://cdn-icons-png.flaticon.com/512/4712/4712104.png" width="200" alt="Nest Logo" />
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+<p align="center">A financial calendar bot for Discord built with Nest.js.</p>
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This project utilizes Node.js to create a financial calendar bot for Discord, helping users stay updated with financial events and announcements.
+
+## Bot Features
+
+This Discord financial calendar bot automatically sends daily economic events to a specified channel in a Discord server. The primary aim of the bot is to provide users with current information about economic events. Here are some key features of the bot:
+
+### 1. Channel Specification
+
+A channel must be designated for the bot to operate. This channel is where the bot will send daily economic events. The bot service should specify this channel.
+
+### 2. Daily Updates
+
+The bot sends current economic events to the specified channel every day at midnight (it's important to note that the timing can be adjustable). These events include economic data released for the day that are deemed significant.
+
+### 3. Real-time Updates
+
+When a specific economic event is announced, the bot instantly displays the actual, previous, and predicted values of the event. This feature enables users to access quick and up-to-date information when economic events are significant.
+
+### 4. Automatic Updates
+
+After an economic event is announced, the bot provides the updated actual value of the event within a minute. This allows users to access current data even at the moment the events occur.
+
+These features are designed to facilitate financial tracking and analysis in Discord servers, making it easier for users to stay informed.
+
 
 ## Installation
 
@@ -32,42 +37,40 @@
 $ npm install
 ```
 
-## Running the app
+## Running the bot locally
 
-```bash
-# development
-$ npm run start
+To run the bot locally, you need to follow these steps:
 
-# watch mode
-$ npm run start:dev
+1. **Set up Discord bot token:**
+   - Create a Discord application and bot on the [Discord Developer Portal](https://discord.com/developers/applications).
+   - Copy the bot token provided.
 
-# production mode
-$ npm run start:prod
-```
+2. **Set up environment variables:**
+   - Create a `.env` file in the root directory.
+   - Add your Discord bot token to the `.env` file:
+     ```
+     DISCORD_TOKEN=your_discord_bot_token_here
+     ```
 
-## Test
+3. **Start the bot:**
+   ```bash
+   $ npm run start
+   ```
 
-```bash
-# unit tests
-$ npm run test
+## Usage
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
+Once the bot is running, it will be online on your Discord server. You can interact with it using commands to get information about financial events, announcements, and more.
 
 ## Support
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+This project is licensed under the MIT License and is open source. Contributions are welcomed, and support from backers helps sustain the project. If you're interested in contributing or supporting, please contact me via email at [ihsan.ersen@hotmail.com](mailto:ihsan.ersen@hotmail.com).
+
 
 ## Stay in touch
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Author - [İhsan Erşen](https://sleda.github.io)
+- GitHub - [sleda](https://github.com/sleda)
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
