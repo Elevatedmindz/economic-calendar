@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BotService = void 0;
 const common_1 = require("@nestjs/common");
 const discord_js_1 = require("discord.js");
+
 let BotService = class BotService {
     constructor() {
         const clientOptions = {
@@ -21,11 +22,22 @@ let BotService = class BotService {
         this.client.on('ready', () => {
             console.log(`Logged in as ${this.client.user.tag}!`);
         });
-        this.client.login('MTA4MzUxODI3MTUzMTI1Nzk2Ng.G9qSDR.aC1QExNq_DiyBNoSd8HsozqM-R1mfmLPEPYxwQ');
+
+        // Pull token from environment variables
+        const botToken = process.env.DISCORD_BOT_TOKEN;
+        if (!botToken) {
+            throw new Error("Bot token is not defined. Please set DISCORD_BOT_TOKEN in your environment variables.");
+        }
+
+        this.client.login(botToken).catch((err) => {
+            console.error("Failed to login the bot:", err);
+        });
     }
+
     getClient() {
         return this.client;
     }
+
     async startBot(botToken) {
         await this.client.login(botToken);
     }
