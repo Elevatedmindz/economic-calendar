@@ -20,7 +20,7 @@ let MessageService = class MessageService {
         this.botService = botService;
         this.messageId = '';
         this.channelID = '1306728238021873674';
-        this.mentionRole = "<@&1080973408990404758>";
+        this.mentionRole = "<@&742012725630206023>";
         this.timezone = "America/New_York";
     }
     async resetMessageId() {
